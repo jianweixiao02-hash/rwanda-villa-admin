@@ -1,72 +1,44 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getTableData } from "@/app/lib/airtable";
+import Link from "next/link";
+// ✅ FIXED: Using strict @/ path for Vercel Linux compatibility
+import { rooms } from "@/app/data/rooms";
 import { translations, Language } from "@/app/translations";
 
-export default function AdminRoomsPage() {
-  const [rooms, setRooms] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function RoomsPage() {
   const [language, setLanguage] = useState<Language>("en");
 
   useEffect(() => {
     const savedLang = localStorage.getItem("lang") as Language | null;
     if (savedLang) setLanguage(savedLang);
-    
-    async function fetchData() {
-      const data = await getTableData("Rooms");
-      setRooms(data);
-      setLoading(false);
-    }
-    fetchData();
   }, []);
 
   const t = translations[language];
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">{t.rooms || "Rooms"} Management</h1>
-
-      {loading ? (
-        <p className="text-gray-500">Loading rooms from Airtable...</p>
-      ) : (
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <table className="min-w-full">
-            <thead className="bg-blue-600 text-white">
-              <tr>
-                <th className="p-4 text-left">Room Name</th>
-                <th className="p-4 text-left">Room Number</th>
-                <th className="p-4 text-left">Price</th>
-                <th className="p-4 text-left">Capacity</th>
-                <th className="p-4 text-left">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rooms.length === 0 ? (
-                <tr><td className="p-4 text-center text-gray-500" colSpan={5}>No rooms found in database.</td></tr>
-              ) : (
-                rooms.map((r: any) => (
-                  <tr key={r.id} className="border-b hover:bg-gray-50">
-                    <td className="p-4 font-semibold">{r.roomName || r.name || "Unknown"}</td>
-                    <td className="p-4">{r.roomNumber || "N/A"}</td>
-                    <td className="p-4 font-bold text-blue-700">${r.price || 0}</td>
-                    <td className="p-4">{r.capacity || 0}</td>
-                    <td className="p-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                        r.status === "Available" ? "bg-green-100 text-green-700" :
-                        r.status === "Occupied" ? "bg-red-100 text-red-700" :
-                        "bg-gray-100 text-gray-700"
-                      }`}>
-                        {r.status || "N/A"}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
+    <main className="min-h-screen bg-gray-100 p-10">
+      <h1 className="text-4xl font-bold text-black mb-8 text-center">{t.roomsTitle}</h1>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        {rooms.map((room) => (
+          <div key={room.id} className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition flex flex-col h-full">
+            <div className="h-32 bg-gray-300 rounded-lg mb-4 flex items-center justify-center text-gray-500 text-sm">
+              {room.name} Image
+            </div>
+            <h2 className="text-2xl font-bold text-black mb-2">{room.name}</h2>
+            <p className="text-gray-600 mb-2">Room: {room.roomNumber}</p>
+            <p className="text-gray-700 mb-1">{t.roomsCapacity}: {room.capacity} {t.roomsGuests}</p>
+            <p className="text-gray-600 mb-4 text-sm">{room.description.substring(0, 60)}...</p>
+            <div className="mt-auto">
+              <p className="text-xl font-bold text-blue-700 mb-3">{room.price.toLocaleString()} {room.currency} {t.roomsNight}</p>
+              <Link href={`/rooms/${room.id}`} className="block w-full text-center bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+                {t.roomsViewDetails}
+              </Link>
+            </div>
+          </div>
+        ))}
+      </div>
+    </main>
   );
 }

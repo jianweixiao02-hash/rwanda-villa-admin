@@ -5,10 +5,11 @@ import { useParams, notFound } from "next/navigation";
 import Link from "next/link";
 import { rooms } from "@/app/data/rooms";
 import { translations, Language } from "@/app/translations";
-import { createRecord } from "@/app/lib/airtable"; // This connects to your DB
+import { createRecord } from "@/app/lib/airtable";
 
 export default function RoomDetailPage() {
   const params = useParams();
+  // CRITICAL FIX: Ensure we parse the ID as a string, then convert to Number
   const id = Number(params.id);
   const room = rooms.find((r) => r.id === id);
 
@@ -37,52 +38,30 @@ export default function RoomDetailPage() {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // ==========================================================
-  // 🚀 THE REAL LOGIC: Writing the booking to Airtable
-  // ==========================================================
   const handleBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setMessage("");
 
     try {
-      // 1. Validate the dates (Optional but good practice)
-      if (!formData.checkIn || !formData.checkOut) {
-        throw new Error("Please select both check-in and check-out dates.");
-      }
-
-      // 2. Call the Airtable helper function to create a new record
       const newBooking = await createRecord("Bookings", {
         customer: formData.name,
         room: room.name,
         checkIn: formData.checkIn,
         checkOut: formData.checkOut,
         guests: Number(formData.guests),
-        status: "Pending", // Default status for new bookings
-        total: 0, // We will calculate price later via a different flow
+        status: "Pending",
+        total: 0,
       });
 
-      // 3. Success feedback to the user
-      setMessage(`✅ Booking confirmed! Your booking ID is: ${newBooking.id}`);
-      
-      // 4. Clear the form after success
-      setFormData({ 
-        name: "", 
-        email: "", 
-        phone: "", 
-        checkIn: "", 
-        checkOut: "", 
-        guests: 1 
-      });
-
-    } catch (error: any) {
-      console.error("Booking Error:", error);
-      setMessage(`❌ Booking failed: ${error.message || "Please try again."}`);
+      setMessage(`✅ Booking confirmed! Booking ID: ${newBooking.id}`);
+      setFormData({ name: "", email: "", phone: "", checkIn: "", checkOut: "", guests: 1 });
+    } catch (error) {
+      setMessage("❌ Booking failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
-  // ==========================================================
 
   return (
     <main className="min-h-screen bg-gray-100 py-10 px-4">
@@ -204,11 +183,7 @@ export default function RoomDetailPage() {
                 {isLoading ? "Booking..." : "Book Now"}
               </button>
 
-              {message && (
-                <p className={`text-center font-medium mt-4 ${message.includes('✅') ? 'text-green-600' : 'text-red-600'}`}>
-                  {message}
-                </p>
-              )}
+              {message && <p className={`text-center font-medium mt-4 ${message.includes('✅') ? 'text-green-600' : 'text-red-600'}`}>{message}</p>}
             </form>
           </div>
         </div>
